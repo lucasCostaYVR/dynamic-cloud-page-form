@@ -1,0 +1,172 @@
+<script runat="server">
+    Platform.Load("Core", "1.1.1");
+    
+    try {
+      
+    
+        // Handle GET request
+        if (Platform.Request.Method == "GET") {
+            // Try getting the data extension key from the URL using the parameter "de"
+            // If it's not provided, show an error message
+            if (Platform.Request.GetQueryStringParameter("de") == null) {
+                Variable.SetValue("@ShowMessage", true);
+                Variable.SetValue("@Message", "Please provide a Data Extension External Key in the URL using the parameter 'de'. Such as '?de=MyDataExtension'");
+            } else {
+                // If the data extension key is provided, get the data extension fields
+                var de_key = Platform.Request.GetQueryStringParameter("de");
+                var de = DataExtension.Init(de_key);
+                var fields = de.Fields.Retrieve();
+    
+                // Check if there are no fields or invalid data extension key
+                if (fields.length == 0) {
+                    Variable.SetValue("@ShowMessage", true);
+                    Variable.SetValue("@Message", "No fields found in the Data Extension. Or Data Extension key is invalid.");
+                } else {
+                    // If fields are found, render the form
+                    Variable.SetValue("@RenderForm", true);
+                    Variable.SetValue("@Message", "Data Extension found");
+    
+                    var form = generateForm(fields);
+                    // Loop through the fields and generate form inputs based on the field type
+                    
+    
+                    // Set the form content
+                    Variable.SetValue("@Form", form);
+                }
+            }
+        }
+    
+        // Handle POST request
+        if (Platform.Request.Method == "POST") {
+            // Get the form data from the POST request
+            var form_data = Platform.Request.GetPostData();
+            // Write(Stringify(GetFormData(form_data)));
+    
+            var de_key = Platform.Request.GetQueryStringParameter("de");
+            var de = DataExtension.Init(de_key);
+            var fields = de.Fields.Retrieve();
+            var data = GetFormData(form_data);
+            var form = generateForm(fields);
+            Variable.SetValue("@Form", form);
+            // Add a new row to the Data Extension
+            var result = de.Rows.Add(data);
+            // Write(Stringify(result));
+    
+            // Display success or error message based on the result
+            if (result == "1") {
+                Variable.SetValue("@Message", "Data added successfully");
+            } else {
+                Variable.SetValue("@Message", "Error adding data");
+            }
+            //display the form again
+            Variable.SetValue("@RenderForm", true);
+        }
+    
+        // Function to parse form data from the URL-encoded string format
+        function GetFormData(form_data_string) {
+            var form_data = {};
+            var form_data_array = form_data_string.split("&");
+            for (var i = 0; i < form_data_array.length; i++) {
+                var key_value = form_data_array[i].split("=");
+                form_data[decodeURIComponent(key_value[0])] = decodeURIComponent(key_value[1]);
+            }
+            return form_data;
+        }
+    
+        // function to get a form element given the fields
+        function generateForm(fields){
+            form = ""
+            for (var i = 0; i < fields.length; i++) {
+                if (fields[i].FieldType == "Text") {
+                    // Adding Tailwind classes to the label and text input
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='text' name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'> <br>";
+                } else if (fields[i].FieldType == "Number") {
+                    // Adding Tailwind classes to the label and number input
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='number' name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br>";
+                } else if (fields[i].FieldType == "Date" && fields[i].DefaultValue == "") {
+                    // Adding Tailwind classes to the label and date input
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='date' name='" + fields[i].Name + "' value='' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br>";
+                } else if (fields[i].FieldType == "Boolean") {
+                    // Adding Tailwind classes to the label and checkbox
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='checkbox' name='" + fields[i].Name + "' id='" + fields[i].Name + "' value='True' class='h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mb-4'><br>";
+                } else if (fields[i].FieldType == "EmailAddress") {
+                    // Adding Tailwind classes to the label and email input
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='email' name='" + fields[i].Name + "' value='" + fields[i].DefaultValue + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br>";
+                } else if (fields[i].FieldType == "Decimal") {
+                    // Adding Tailwind classes to the label and decimal input
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='number' name='" + fields[i].Name + "' step='0.01' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br>";
+                } else if (fields[i].FieldType == "Phone") {
+                    // Adding Tailwind classes to the label and phone input
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='tel' name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br>";
+                }
+            }
+        return form;
+        }
+    
+    } catch (e) {
+        // Catch and display any errors that occur during execution
+        Write(Stringify("Error: " + e));
+    }
+    </script>
+    
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Extension - Add Fields</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <div class="max-w-4xl mx-auto py-8">
+        <div class="bg-white p-8 shadow-md rounded-lg">
+
+            <!-- Server-side script -->
+            <script runat="server">
+                try {
+            </script>
+
+            <!-- Show fields or messages dynamically -->
+            %%=v(@Fields)=%%
+
+            %%[ IF @Message != ""  THEN ]%%
+                <div class="mb-4">
+                    <p class="text-green-500 font-semibold">%%=v(@Message)=%%</p>
+                </div>
+            %%[ENDIF]%%
+
+            %%[
+                IF @RenderForm THEN 
+            ]%%
+
+            <form method="POST" class="space-y-6">
+
+                <!-- Dynamically inserted form fields -->
+                %%=v(@Form)=%%
+
+                <div>
+                    <input type="submit" value="Submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
+                </div>
+
+            </form>
+
+            %%[ENDIF]%%
+
+            <script runat="server">
+                } catch (e) {
+                    Write(Stringify(e));
+                }
+            </script>
+        </div>
+    </div>
+</body>
+</html>

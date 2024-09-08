@@ -8,6 +8,8 @@
         if (Platform.Request.Method == "GET") {
             // Try getting the data extension key from the URL using the parameter "de"
             // If it's not provided, show an error message
+            de_key = Platform.Request.GetQueryStringParameter("de");
+            Write(de_key);
             if (Platform.Request.GetQueryStringParameter("de") == null) {
                 Variable.SetValue("@ShowMessage", true);
                 Variable.SetValue("@Message", "Please provide a Data Extension External Key in the URL using the parameter 'de'. Such as '?de=MyDataExtension'");
@@ -77,11 +79,19 @@
         function generateForm(fields){
             form = ""
             for (var i = 0; i < fields.length; i++) {
-                if (fields[i].FieldType == "Text") {
+                if (fields[i].FieldType == "Text" && fields[i].DefaultValue.indexOf(";") > -1) {
                     // Adding Tailwind classes to the label and text input
                     form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
-                    form += "<input type='text' name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'> <br>";
-                } else if (fields[i].FieldType == "Number") {
+                    form += "<select name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'>";
+                        var options = fields[i].DefaultValue.split(";");
+                        for (var j = 0; j < options.length; j++) {
+                            form += "<option value='" + options[j] + "'>" + options[j] + "</option>";
+                        }
+                    form += "</select><br>";
+                }else if(fields[i].FieldType == "Text"){
+                    form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
+                    form += "<input type='text' name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br/>";
+                }else if (fields[i].FieldType == "Number") {
                     // Adding Tailwind classes to the label and number input
                     form += "<label for='" + fields[i].Name + "' class='block text-sm font-medium text-gray-700 mb-1'>" + fields[i].Name + "</label>";
                     form += "<input type='number' name='" + fields[i].Name + "' id='" + fields[i].Name + "' class='w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 mb-4'><br>";
